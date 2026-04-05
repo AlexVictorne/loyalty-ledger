@@ -1,3 +1,7 @@
 package main
 
-func main() {}
+import "log"
+
+func main() {
+	log.Printf("Hello, Gophermart!")
+}

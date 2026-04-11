@@ -31,8 +31,12 @@ func main() {
 	JWTConfig := auth.DefaultJWTConfigWithSecret(cfg.JWTSecret)
 	userHandler := handler.NewUserHandler(userService, JWTConfig)
 
+	orderService := service.NewOrderService(repos.Order)
+	orderHandler := handler.NewOrderHandler(orderService)
+
 	handlers := handler.Handlers{
-		User: userHandler,
+		User:  userHandler,
+		Order: orderHandler,
 	}
 	mux := handler.NewRouter(handlers, cfg)
 

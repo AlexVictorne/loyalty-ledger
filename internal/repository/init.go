@@ -14,8 +14,9 @@ import (
 )
 
 type RepositorySet struct {
-	User UserRepository
-	PGX  *pgxpool.Pool // nil если in-memory
+	User  UserRepository
+	Order OrderRepository
+	PGX   *pgxpool.Pool // nil если in-memory
 }
 
 // Инициализируем репозитории и, если указана работа через БД, подключение к БД и миграции.
@@ -41,13 +42,15 @@ func InitRepositories(databaseURI string, migrateFunc func(db *sql.DB) error) (*
 			return nil, fmt.Errorf("pgx pool not available: %w", err)
 		}
 		return &RepositorySet{
-			User: NewPostgresUserRepository(pool),
-			PGX:  pool,
+			User:  NewPostgresUserRepository(pool),
+			Order: NewPostgresOrderRepository(pool),
+			PGX:   pool,
 		}, nil
 	}
 	return &RepositorySet{
-		User: NewInMemoryUserRepository(),
-		PGX:  nil,
+		User:  NewInMemoryUserRepository(),
+		Order: NewInMemoryOrderRepository(),
+		PGX:   nil,
 	}, nil
 }
 

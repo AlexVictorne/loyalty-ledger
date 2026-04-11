@@ -17,7 +17,8 @@ type UserRoutes interface {
 
 // Структура для всех handler-интерфейсов
 type Handlers struct {
-	User UserRoutes
+	User  UserRoutes
+	Order OrderRoutes
 }
 
 func NewRouter(h Handlers, cfg *config.Config) http.Handler {
@@ -35,6 +36,10 @@ func NewRouter(h Handlers, cfg *config.Config) http.Handler {
 
 	r.Group(func(protected chi.Router) {
 		protected.Use(auth.AuthMiddleware(jwtCfg))
+		// Эндпоинты заказов
+		protected.Post("/api/user/orders", h.Order.RegisterOrder)
+		protected.Get("/api/user/orders", h.Order.GetOrders)
+		// Пример защищённого эндпоинта
 		protected.Get("/api/protected", func(w http.ResponseWriter, r *http.Request) {
 			info, ok := auth.GetAuthInfo(r.Context())
 			if !ok {

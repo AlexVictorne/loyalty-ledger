@@ -43,3 +43,8 @@ func GetAuthInfo(ctx context.Context) (*AuthInfo, bool) {
 	info, ok := ctx.Value(authInfoKey{}).(*AuthInfo)
 	return info, ok
 }
+
+// SetAuthInfo помещает AuthInfo в context (для тестов и ручной подстановки)
+func SetAuthInfo(ctx context.Context, info *AuthInfo) context.Context {
+	return context.WithValue(ctx, authInfoKey{}, info)
+}

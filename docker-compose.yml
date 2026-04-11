@@ -1,0 +1,30 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: loyalty_ledger_postgres
+    environment:
+      POSTGRES_USER: loyalty_ledger
+      POSTGRES_PASSWORD: loyalty_ledger
+      POSTGRES_DB: loyalty_ledger
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loyalty_ledger -d loyalty_ledger"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  migrate:
+    image: migrate/migrate:v4.19.1
+    depends_on:
+      - postgres
+    volumes:
+      - ./migrations:/migrations
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "sleep 5 && migrate -path=/migrations -database 'postgres://loyalty_ledger:loyalty_ledger@postgres:5432/loyalty_ledger?sslmode=disable' up"
+volumes:
+  postgres_data:

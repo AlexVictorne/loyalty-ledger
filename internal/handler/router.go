@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"loyalty-ledger/internal/config"
 	"loyalty-ledger/pkg/auth"
 	"net/http"
@@ -10,15 +9,11 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type UserRoutes interface {
-	Register(w http.ResponseWriter, r *http.Request)
-	Login(w http.ResponseWriter, r *http.Request)
-}
-
 // Структура для всех handler-интерфейсов
 type Handlers struct {
-	User  UserRoutes
-	Order OrderRoutes
+	User    UserRoutes
+	Order   OrderRoutes
+	Balance BalanceRoutes
 }
 
 func NewRouter(h Handlers, cfg *config.Config) http.Handler {
@@ -28,6 +23,7 @@ func NewRouter(h Handlers, cfg *config.Config) http.Handler {
 	r.Use(middleware.Compress(5))
 
 	// Публичные маршруты
+	// Эндпоинты пользователей
 	r.Post("/api/user/register", h.User.Register)
 	r.Post("/api/user/login", h.User.Login)
 
@@ -39,16 +35,10 @@ func NewRouter(h Handlers, cfg *config.Config) http.Handler {
 		// Эндпоинты заказов
 		protected.Post("/api/user/orders", h.Order.RegisterOrder)
 		protected.Get("/api/user/orders", h.Order.GetOrders)
-		// Пример защищённого эндпоинта
-		protected.Get("/api/protected", func(w http.ResponseWriter, r *http.Request) {
-			info, ok := auth.GetAuthInfo(r.Context())
-			if !ok {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("Hello, " + info.Login + " (id=" + fmt.Sprint(info.UserID) + ")"))
-		})
+		// Эндпоинты баланса
+		protected.Get("/api/user/balance", h.Balance.GetBalance)
+		protected.Post("/api/user/balance/withdraw", h.Balance.Withdraw)
+		protected.Get("/api/user/withdrawals", h.Balance.GetWithdrawals)
 	})
 
 	return r

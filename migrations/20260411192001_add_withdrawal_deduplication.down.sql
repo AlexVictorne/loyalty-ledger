@@ -1,0 +1,2 @@
+ALTER TABLE withdrawals
+DROP CONSTRAINT IF EXISTS withdrawals_user_order_unique;

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"loyalty-ledger/internal/model"
 	"loyalty-ledger/internal/repository"
+	"loyalty-ledger/pkg/validate"
 	"sort"
 	"time"
 )
@@ -30,36 +31,11 @@ const (
 	OrderStatusInvalid        = "invalid"
 )
 
-func isValidLuhn(number string) bool {
-	var sum int
-	double := false
-	for i := len(number) - 1; i >= 0; i-- {
-		d := int(number[i] - '0')
-		if d < 0 || d > 9 {
-			return false
-		}
-		if double {
-			d = d * 2
-			if d > 9 {
-				d -= 9
-			}
-		}
-		sum += d
-		double = !double
-	}
-	return sum%10 == 0
-}
-
 func (s *OrderService) RegisterOrder(ctx context.Context, userID int64, number string) (string, error) {
 	if number == "" {
 		return OrderStatusInvalid, ErrOrderNumberEmpty
 	}
-	for _, c := range number {
-		if c < '0' || c > '9' {
-			return OrderStatusInvalid, ErrOrderInvalid
-		}
-	}
-	if !isValidLuhn(number) {
+	if !validate.IsValidLuhn(number) {
 		return OrderStatusInvalid, ErrOrderInvalid
 	}
 	existing, _ := s.repo.GetOrderByNumber(ctx, number)

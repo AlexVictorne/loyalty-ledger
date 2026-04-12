@@ -34,9 +34,13 @@ func main() {
 	orderService := service.NewOrderService(repos.Order)
 	orderHandler := handler.NewOrderHandler(orderService)
 
+	balanceService := service.NewBalanceService(repos.Balance)
+	balanceHandler := handler.NewBalanceHandler(balanceService)
+
 	handlers := handler.Handlers{
-		User:  userHandler,
-		Order: orderHandler,
+		User:    userHandler,
+		Order:   orderHandler,
+		Balance: balanceHandler,
 	}
 	mux := handler.NewRouter(handlers, cfg)
 

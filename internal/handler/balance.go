@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"loyalty-ledger/internal/model"
-	"loyalty-ledger/internal/service"
 	"loyalty-ledger/pkg/auth"
 	"loyalty-ledger/pkg/points"
 	"net/http"
@@ -79,9 +78,9 @@ func (h *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 	switch err {
 	case nil:
 		w.WriteHeader(http.StatusOK)
-	case service.ErrInsufficientFunds:
+	case model.ErrInsufficientFunds:
 		w.WriteHeader(http.StatusPaymentRequired)
-	case service.ErrInvalidSum, service.ErrOrderNumberRequired, service.ErrOrderAlreadyWithdrawn:
+	case model.ErrInvalidSum, model.ErrOrderNumberRequired, model.ErrOrderAlreadyWithdrawn:
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	default:
 		log.Printf("withdraw error: %v", err)

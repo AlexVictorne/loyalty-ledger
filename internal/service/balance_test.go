@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"loyalty-ledger/internal/model"
 	"loyalty-ledger/internal/repository"
 	"testing"
 	"time"
@@ -16,7 +17,7 @@ func TestBalanceService_Accrue(t *testing.T) {
 
 	t.Run("negative sum", func(t *testing.T) {
 		err := svc.Accrue(ctx, userID, -100)
-		if !errors.Is(err, ErrInvalidSum) {
+		if !errors.Is(err, model.ErrInvalidSum) {
 			t.Errorf("expected ErrInvalidSum, got %v", err)
 		}
 	})
@@ -42,35 +43,35 @@ func TestBalanceService_Withdraw(t *testing.T) {
 
 	t.Run("order not digits", func(t *testing.T) {
 		err := svc.Withdraw(ctx, userID, "abc123", 100)
-		if !errors.Is(err, ErrOrderNumberRequired) {
+		if !errors.Is(err, model.ErrOrderNumberRequired) {
 			t.Errorf("expected ErrOrderNumberRequired, got %v", err)
 		}
 	})
 
 	t.Run("order not luhn", func(t *testing.T) {
 		err := svc.Withdraw(ctx, userID, "1234567890", 100)
-		if !errors.Is(err, ErrOrderNumberRequired) {
+		if !errors.Is(err, model.ErrOrderNumberRequired) {
 			t.Errorf("expected ErrOrderNumberRequired, got %v", err)
 		}
 	})
 
 	t.Run("negative sum", func(t *testing.T) {
 		err := svc.Withdraw(ctx, userID, "123", -100)
-		if !errors.Is(err, ErrInvalidSum) {
+		if !errors.Is(err, model.ErrInvalidSum) {
 			t.Errorf("expected ErrInvalidSum, got %v", err)
 		}
 	})
 
 	t.Run("empty order", func(t *testing.T) {
 		err := svc.Withdraw(ctx, userID, "", 100)
-		if !errors.Is(err, ErrOrderNumberRequired) {
+		if !errors.Is(err, model.ErrOrderNumberRequired) {
 			t.Errorf("expected ErrOrderNumberRequired, got %v", err)
 		}
 	})
 
 	t.Run("insufficient funds", func(t *testing.T) {
 		err := svc.Withdraw(ctx, userID, "79927398713", 2000)
-		if !errors.Is(err, ErrInsufficientFunds) {
+		if !errors.Is(err, model.ErrInsufficientFunds) {
 			t.Errorf("expected ErrInsufficientFunds, got %v", err)
 		}
 	})
@@ -115,7 +116,7 @@ func TestBalanceService_Withdraw(t *testing.T) {
 		}
 		// Второй раз по тому же orderNumber — ошибка
 		err = svc.Withdraw(ctx, userID, "12345678903", 100)
-		if !errors.Is(err, ErrOrderAlreadyWithdrawn) {
+		if !errors.Is(err, model.ErrOrderAlreadyWithdrawn) {
 			t.Errorf("expected ErrOrderAlreadyWithdrawn, got %v", err)
 		}
 	})

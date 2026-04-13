@@ -2,19 +2,13 @@ package service
 
 import (
 	"context"
-	"errors"
 	"loyalty-ledger/internal/model"
 	"loyalty-ledger/internal/repository"
 	"loyalty-ledger/pkg/validate"
 	"sort"
 )
 
-var (
-	ErrInsufficientFunds     = errors.New("insufficient funds")
-	ErrInvalidSum            = errors.New("sum must be positive")
-	ErrOrderNumberRequired   = errors.New("order number required")
-	ErrOrderAlreadyWithdrawn = errors.New("order already withdrawn")
-)
+// Ошибки теперь в model/errors.go
 
 type BalanceService struct {
 	repo repository.BalanceRepository
@@ -30,28 +24,28 @@ func (s *BalanceService) GetBalance(ctx context.Context, userID int64) (*model.B
 
 func (s *BalanceService) Accrue(ctx context.Context, userID int64, sum int64) error {
 	if sum <= 0 {
-		return ErrInvalidSum
+		return model.ErrInvalidSum
 	}
 	return s.repo.Accrue(ctx, userID, sum)
 }
 
 func (s *BalanceService) Withdraw(ctx context.Context, userID int64, orderNumber string, sum int64) error {
 	if sum <= 0 {
-		return ErrInvalidSum
+		return model.ErrInvalidSum
 	}
 	if orderNumber == "" {
-		return ErrOrderNumberRequired
+		return model.ErrOrderNumberRequired
 	}
 	if !validate.IsValidLuhn(orderNumber) {
-		return ErrOrderNumberRequired
+		return model.ErrOrderNumberRequired
 	}
 	err := s.repo.Withdraw(ctx, userID, orderNumber, sum)
 	if err != nil {
 		switch err.Error() {
-		case "insufficient funds":
-			return ErrInsufficientFunds
-		case "order already withdrawn":
-			return ErrOrderAlreadyWithdrawn
+		case model.ErrInsufficientFunds.Error():
+			return model.ErrInsufficientFunds
+		case model.ErrOrderAlreadyWithdrawn.Error():
+			return model.ErrOrderAlreadyWithdrawn
 		}
 	}
 	return err

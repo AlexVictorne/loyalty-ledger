@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"loyalty-ledger/internal/model"
 	"sync"
 	"time"
@@ -52,12 +51,12 @@ func (r *InMemoryBalanceRepository) Withdraw(ctx context.Context, userID int64, 
 	defer r.mu.Unlock()
 	b, ok := r.balances[userID]
 	if !ok || b.Current < sum {
-		return errors.New("insufficient funds")
+		return model.ErrInsufficientFunds
 	}
 	// deduplication: check if orderNumber already withdrawn
 	for _, w := range r.withdrawals[userID] {
 		if w.OrderNumber == orderNumber {
-			return errors.New("order already withdrawn")
+			return model.ErrOrderAlreadyWithdrawn
 		}
 	}
 	b.Current -= sum

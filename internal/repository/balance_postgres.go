@@ -55,10 +55,13 @@ func (r *PostgresBalanceRepository) Withdraw(ctx context.Context, userID int64, 
 	var current int64
 	row := tx.QueryRow(ctx, `SELECT current FROM balances WHERE user_id = $1 FOR UPDATE`, userID)
 	if err := row.Scan(&current); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.ErrInsufficientFunds
+		}
 		return err
 	}
 	if current < sum {
-		return errors.New("insufficient funds")
+		return model.ErrInsufficientFunds
 	}
 	now := time.Now()
 	_, err = tx.Exec(ctx, `UPDATE balances SET current = current - $1, updated_at = $2 WHERE user_id = $3`, sum, now, userID)
@@ -69,7 +72,7 @@ func (r *PostgresBalanceRepository) Withdraw(ctx context.Context, userID int64, 
 	if err != nil {
 		// check for unique violation (duplicate order)
 		if pgErr, ok := err.(interface{ SQLState() string }); ok && pgErr.SQLState() == "23505" {
-			return errors.New("order already withdrawn")
+			return model.ErrOrderAlreadyWithdrawn
 		}
 		return err
 	}

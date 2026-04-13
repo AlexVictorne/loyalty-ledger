@@ -7,6 +7,7 @@ import (
 	"loyalty-ledger/internal/model"
 	"loyalty-ledger/internal/service"
 	"loyalty-ledger/pkg/auth"
+	"loyalty-ledger/pkg/points"
 	"net/http"
 )
 
@@ -43,7 +44,11 @@ func (h *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(bw)
+	resp := BalanceResponse{
+		Current:   points.ToAPI(bw.Current),
+		Withdrawn: points.ToAPI(bw.Withdrawn),
+	}
+	json.NewEncoder(w).Encode(resp)
 }
 
 // POST /api/user/balance/withdraw
@@ -62,15 +67,13 @@ func (h *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	var req struct {
-		Order string `json:"order"`
-		Sum   int64  `json:"sum"`
-	}
+	var req WithdrawRequest
 	if err := json.Unmarshal(body, &req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err = h.service.Withdraw(r.Context(), info.UserID, req.Order, req.Sum)
+	sumInt := points.ToInternal(req.Sum)
+	err = h.service.Withdraw(r.Context(), info.UserID, req.Order, sumInt)
 	switch err {
 	case nil:
 		w.WriteHeader(http.StatusOK)
@@ -100,5 +103,14 @@ func (h *BalanceHandler) GetWithdrawals(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(list)
+	// Преобразуем суммы к float64 для API
+	resp := make([]WithdrawalResponse, len(list))
+	for i, w := range list {
+		resp[i] = WithdrawalResponse{
+			Order:       w.OrderNumber,
+			Sum:         points.ToAPI(w.Sum),
+			ProcessedAt: w.ProcessedAt,
+		}
+	}
+	json.NewEncoder(w).Encode(resp)
 }

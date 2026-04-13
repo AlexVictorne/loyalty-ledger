@@ -6,6 +6,7 @@ import (
 	"loyalty-ledger/internal/model"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,6 +22,10 @@ func (r *PostgresBalanceRepository) GetBalance(ctx context.Context, userID int64
 	row := r.pool.QueryRow(ctx, `SELECT user_id, current, updated_at FROM balances WHERE user_id = $1`, userID)
 	b := &model.Balance{}
 	if err := row.Scan(&b.UserID, &b.Current, &b.UpdatedAt); err != nil {
+		// Если не найдено — возвращаем баланс с 0
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &model.Balance{UserID: userID, Current: 0, UpdatedAt: time.Now()}, nil
+		}
 		return nil, err
 	}
 	return b, nil
@@ -74,6 +79,10 @@ func (r *PostgresBalanceRepository) Withdraw(ctx context.Context, userID int64, 
 func (r *PostgresBalanceRepository) GetWithdrawals(ctx context.Context, userID int64) ([]*model.Withdrawal, error) {
 	rows, err := r.pool.Query(ctx, `SELECT id, user_id, order_number, sum, processed_at FROM withdrawals WHERE user_id = $1`, userID)
 	if err != nil {
+		// Если не найдено — возвращаем пустой список
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []*model.Withdrawal{}, nil
+		}
 		return nil, err
 	}
 	defer rows.Close()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log"
 	"loyalty-ledger/internal/model"
 	"loyalty-ledger/internal/service"
 	"loyalty-ledger/pkg/auth"
@@ -40,6 +41,7 @@ func (h *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 	bw, err := h.service.GetBalanceWithWithdrawn(r.Context(), info.UserID)
 	if err != nil {
+		log.Printf("get balance error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -82,6 +84,7 @@ func (h *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 	case service.ErrInvalidSum, service.ErrOrderNumberRequired, service.ErrOrderAlreadyWithdrawn:
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	default:
+		log.Printf("withdraw error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }

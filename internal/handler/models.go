@@ -31,3 +31,17 @@ type WithdrawRequest struct {
 	Order string  `json:"order"`
 	Sum   float64 `json:"sum"`
 }
+
+// OrderResponse — структура ответа для /api/user/orders
+// [
+//
+//	{"number": "12345678903", "status": "PROCESSED", "accrual": 300.75, "uploaded_at": "2023-03-10T10:00:00Z"},
+//	...
+//
+// ]
+type OrderResponse struct {
+	Number     string    `json:"number"`
+	Status     string    `json:"status"`
+	Accrual    float64   `json:"accrual,omitempty"`
+	UploadedAt time.Time `json:"uploaded_at"`
+}

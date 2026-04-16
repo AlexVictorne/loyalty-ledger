@@ -8,6 +8,7 @@ import (
 	"loyalty-ledger/internal/model"
 	"loyalty-ledger/internal/service"
 	"loyalty-ledger/pkg/auth"
+	"loyalty-ledger/pkg/points"
 	"net/http"
 )
 
@@ -87,7 +88,17 @@ func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+	// Преобразуем внутренние model.Order во внешний формат
+	resp := make([]OrderResponse, 0, len(orders))
+	for _, o := range orders {
+		resp = append(resp, OrderResponse{
+			Number:     o.Number,
+			Status:     o.Status,
+			Accrual:    points.ToAPI(o.Accrual),
+			UploadedAt: o.CreatedAt,
+		})
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(orders)
+	_ = json.NewEncoder(w).Encode(resp)
 }

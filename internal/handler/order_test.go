@@ -146,4 +146,41 @@ func TestOrderHandler_GetOrders(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("accrual conversion to API format", func(t *testing.T) {
+		repo := repository.NewInMemoryOrderRepository()
+		svc := service.NewOrderService(repo)
+		h := NewOrderHandler(svc)
+		userID := int64(42)
+		accrualInt := int64(157)
+		_ = repo.CreateOrder(context.Background(), &model.Order{
+			Number:    "555",
+			UserID:    userID,
+			Accrual:   accrualInt,
+			Status:    "PROCESSED",
+			CreatedAt: time.Now(),
+		})
+		req := httptest.NewRequest(http.MethodGet, "/api/user/orders", nil)
+		ctx := auth.SetAuthInfo(req.Context(), &auth.AuthInfo{UserID: userID, Login: "testuser"})
+		req = req.WithContext(ctx)
+		rw := httptest.NewRecorder()
+		h.GetOrders(rw, req)
+		if rw.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", rw.Code)
+		}
+		var orders []map[string]interface{}
+		if err := json.NewDecoder(rw.Body).Decode(&orders); err != nil {
+			t.Errorf("response decode error: %v", err)
+		}
+		if len(orders) != 1 {
+			t.Fatalf("expected 1 order, got %d", len(orders))
+		}
+		accrual, ok := orders[0]["accrual"].(float64)
+		if !ok {
+			t.Errorf("accrual field missing or not float64: %v", orders[0]["accrual"])
+		}
+		if accrual != 1.57 {
+			t.Errorf("expected accrual 1.57, got %v", accrual)
+		}
+	})
 }

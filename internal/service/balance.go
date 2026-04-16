@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"loyalty-ledger/internal/model"
 	"loyalty-ledger/internal/repository"
 	"loyalty-ledger/pkg/validate"
@@ -41,10 +42,10 @@ func (s *BalanceService) Withdraw(ctx context.Context, userID int64, orderNumber
 	}
 	err := s.repo.Withdraw(ctx, userID, orderNumber, sum)
 	if err != nil {
-		switch err.Error() {
-		case model.ErrInsufficientFunds.Error():
+		switch {
+		case errors.Is(err, model.ErrInsufficientFunds):
 			return model.ErrInsufficientFunds
-		case model.ErrOrderAlreadyWithdrawn.Error():
+		case errors.Is(err, model.ErrOrderAlreadyWithdrawn):
 			return model.ErrOrderAlreadyWithdrawn
 		}
 	}

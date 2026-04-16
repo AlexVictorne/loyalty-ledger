@@ -8,9 +8,12 @@ import (
 )
 
 type Config struct {
-	RunAddress  string `env:"RUN_ADDRESS" env-default:":8080"`
-	DatabaseURI string `env:"DATABASE_URI"`
-	JWTSecret   string `env:"JWT_SECRET" env-default:"dev_secret"`
+	RunAddress     string `env:"RUN_ADDRESS" env-default:":8080"`
+	DatabaseURI    string `env:"DATABASE_URI"`
+	JWTSecret      string `env:"JWT_SECRET" env-default:"dev_secret"`
+	AccrualAddr    string `env:"ACCRUAL_SYSTEM_ADDRESS" env-default:"http://localhost:8081"`
+	AccrualPoller  int    `env:"ACCRUAL_WORKER_INTERVAL" env-default:"5"` // в секундах
+	AccrualWorkers int    `env:"ACCRUAL_WORKER_COUNT" env-default:"4"`    // кол-во параллельных воркеров для обработки заказов
 }
 
 func Load() *Config {
@@ -20,8 +23,11 @@ func Load() *Config {
 	}
 
 	flag.StringVar(&cfg.RunAddress, "a", cfg.RunAddress, "server address")
-	flag.StringVar(&cfg.DatabaseURI, "d", cfg.DatabaseURI, "database uri")
+	flag.StringVar(&cfg.DatabaseURI, "d", cfg.DatabaseURI, "database uris")
 	flag.StringVar(&cfg.JWTSecret, "s", cfg.JWTSecret, "jwt secret")
+	flag.StringVar(&cfg.AccrualAddr, "r", cfg.AccrualAddr, "accrual system address")
+	flag.IntVar(&cfg.AccrualPoller, "accrual-interval", cfg.AccrualPoller, "accrual poll interval (seconds)")
+	flag.IntVar(&cfg.AccrualWorkers, "accrual-workers", cfg.AccrualWorkers, "number of parallel accrual workers")
 	flag.Parse()
 
 	return &cfg

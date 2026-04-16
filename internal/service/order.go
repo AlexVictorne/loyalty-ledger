@@ -38,7 +38,10 @@ func (s *OrderService) RegisterOrder(ctx context.Context, userID int64, number s
 	if !validate.IsValidLuhn(number) {
 		return OrderStatusInvalid, ErrOrderInvalid
 	}
-	existing, _ := s.repo.GetOrderByNumber(ctx, number)
+	existing, err := s.repo.GetOrderByNumber(ctx, number)
+	if err != nil {
+		return "", err
+	}
 	if existing != nil {
 		if existing.UserID == userID {
 			return OrderStatusDuplicateOwn, nil
@@ -51,7 +54,7 @@ func (s *OrderService) RegisterOrder(ctx context.Context, userID int64, number s
 		Status:    model.OrderStatusNew,
 		CreatedAt: time.Now(),
 	}
-	err := s.repo.CreateOrder(ctx, order)
+	err = s.repo.CreateOrder(ctx, order)
 	if err != nil {
 		return "", err
 	}

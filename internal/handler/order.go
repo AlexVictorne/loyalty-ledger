@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"loyalty-ledger/internal/model"
 	"loyalty-ledger/internal/service"
 	"loyalty-ledger/pkg/auth"
 	"net/http"
@@ -15,11 +16,16 @@ type OrderRoutes interface {
 	GetOrders(w http.ResponseWriter, r *http.Request)
 }
 
-type OrderHandler struct {
-	service *service.OrderService
+type OrderServiceIface interface {
+	RegisterOrder(ctx context.Context, userID int64, number string) (string, error)
+	GetOrdersByUser(ctx context.Context, userID int64) ([]*model.Order, error)
 }
 
-func NewOrderHandler(service *service.OrderService) *OrderHandler {
+type OrderHandler struct {
+	service OrderServiceIface
+}
+
+func NewOrderHandler(service OrderServiceIface) *OrderHandler {
 	return &OrderHandler{service: service}
 }
 
@@ -43,7 +49,7 @@ func (h *OrderHandler) RegisterOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	number := string(bytes.TrimSpace(body))
-	status, err := h.service.RegisterOrder(context.Background(), info.UserID, number)
+	status, err := h.service.RegisterOrder(r.Context(), info.UserID, number)
 	switch status {
 	case service.OrderStatusInvalid:
 		w.WriteHeader(http.StatusUnprocessableEntity) // 422
@@ -72,7 +78,7 @@ func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	orders, err := h.service.GetOrdersByUser(context.Background(), info.UserID)
+	orders, err := h.service.GetOrdersByUser(r.Context(), info.UserID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

@@ -17,12 +17,17 @@ type UserRoutes interface {
 	Login(w http.ResponseWriter, r *http.Request)
 }
 
+type UserServiceIface interface {
+	Register(ctx context.Context, req *model.UserRequest) (*model.User, error)
+	Authenticate(ctx context.Context, req *model.UserRequest) (*model.User, error)
+}
+
 type UserHandler struct {
-	service *service.UserService
+	service UserServiceIface
 	jwtCfg  auth.JWTConfig
 }
 
-func NewUserHandler(service *service.UserService, jwtCfg auth.JWTConfig) *UserHandler {
+func NewUserHandler(service UserServiceIface, jwtCfg auth.JWTConfig) *UserHandler {
 	return &UserHandler{service: service, jwtCfg: jwtCfg}
 }
 
@@ -37,7 +42,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	user, err := h.service.Register(context.Background(), &req)
+	user, err := h.service.Register(r.Context(), &req)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrUserExists):
@@ -67,7 +72,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	user, err := h.service.Authenticate(context.Background(), &req)
+	user, err := h.service.Authenticate(r.Context(), &req)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrLoginPasswordEmpty):

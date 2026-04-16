@@ -51,3 +51,48 @@ func (r *InMemoryOrderRepository) GetOrdersByUser(ctx context.Context, userID in
 	}
 	return result, nil
 }
+
+func (r *InMemoryOrderRepository) GetOrdersByStatus(ctx context.Context, statuses ...string) ([]string, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	statusSet := make(map[string]struct{}, len(statuses))
+	for _, s := range statuses {
+		statusSet[s] = struct{}{}
+	}
+	var result []string
+	for _, order := range r.orders {
+		if _, ok := statusSet[order.Status]; ok {
+			result = append(result, order.Number)
+		}
+	}
+	return result, nil
+}
+
+func (r *InMemoryOrderRepository) UpdateOrderStatus(ctx context.Context, orderNumber string, status string, accrual *int64) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	order, exists := r.orders[orderNumber]
+	if !exists {
+		return model.ErrOrderNotFound
+	}
+	order.Status = status
+	if accrual != nil {
+		order.Accrual = *accrual
+	}
+	return nil
+}
+
+// BatchUpdateOrderStatus updates status for multiple orders if current status matches fromStatus.
+func (r *InMemoryOrderRepository) BatchUpdateOrderStatus(ctx context.Context, orderNumbers []string, fromStatus, toStatus string) ([]string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var updated []string
+	for _, num := range orderNumbers {
+		order, ok := r.orders[num]
+		if ok && order.Status == fromStatus {
+			order.Status = toStatus
+			updated = append(updated, num)
+		}
+	}
+	return updated, nil
+}

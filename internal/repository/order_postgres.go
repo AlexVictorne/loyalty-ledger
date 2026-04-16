@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"loyalty-ledger/internal/model"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -60,4 +61,60 @@ func (r *PostgresOrderRepository) GetOrdersByUser(ctx context.Context, userID in
 		result = append(result, order)
 	}
 	return result, nil
+}
+
+func (r *PostgresOrderRepository) GetOrdersByStatus(ctx context.Context, statuses ...string) ([]string, error) {
+	if len(statuses) == 0 {
+		return nil, nil
+	}
+	// Build query with IN clause
+	query := `SELECT number FROM orders WHERE status = ANY($1)`
+	rows, err := r.pool.Query(ctx, query, statuses)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []string
+	for rows.Next() {
+		var number string
+		if err := rows.Scan(&number); err != nil {
+			return nil, err
+		}
+		result = append(result, number)
+	}
+	return result, nil
+}
+
+func (r *PostgresOrderRepository) UpdateOrderStatus(ctx context.Context, orderNumber string, status string, accrual *int64) error {
+	var accrualVal interface{} = nil
+	if accrual != nil {
+		accrualVal = *accrual
+	}
+	query := `UPDATE orders SET status = $1, accrual = $2 WHERE number = $3`
+	_, err := r.pool.Exec(ctx, query, status, accrualVal, orderNumber)
+	return err
+}
+
+// BatchUpdateOrderStatus updates status for multiple orders if current status matches fromStatus.
+// Returns list of actually updated order numbers.
+func (r *PostgresOrderRepository) BatchUpdateOrderStatus(ctx context.Context, orderNumbers []string, fromStatus, toStatus string) ([]string, error) {
+	if len(orderNumbers) == 0 {
+		return nil, nil
+	}
+	// Update only orders with matching fromStatus, return updated numbers
+	query := `UPDATE orders SET status = $1 WHERE number = ANY($2) AND status = $3 RETURNING number`
+	rows, err := r.pool.Query(ctx, query, toStatus, orderNumbers, fromStatus)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var updated []string
+	for rows.Next() {
+		var number string
+		if err := rows.Scan(&number); err != nil {
+			return nil, err
+		}
+		updated = append(updated, number)
+	}
+	return updated, nil
 }

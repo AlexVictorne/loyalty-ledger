@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS balances (
+    user_id    BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    current    BIGINT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL
+);
